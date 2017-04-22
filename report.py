@@ -1,4 +1,5 @@
 ﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import smtplib
 import datetime
 import urllib
@@ -8,14 +9,13 @@ from oauth2client import client
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+
+def removeNonAscii(s): return "".join(i for i in s if ord(i)<128)
 def GetMissingIDS(sheet):
     ids = []
     for line in sheet.rows:
-        if (line[0].value == 'Submitted' and line[5].value == None):
-            try:
-                ids.append(str(line[1].value))
-            except:
-                print 'failed to parse ...'  
+        if (line[0].value == 'Submitted' and line[5].value == None  and line[1].value != None):
+            ids.append(str(removeNonAscii(line[1].value)))           
     return ids
                         
 def GetMissingUrls(sheet):
@@ -48,11 +48,9 @@ def GetLastWeek(sheet,days):
                     
                                 
             diff  =  now - published
-            if (diff.days <= days): 
-                try:
-                    last[str(line[1].value)]=str(line[6].value)           
-                except:
-                    print 'failed to parse...'
+            if (diff.days <= days and line[1].value != None and line[6].value != None): 
+                last[str(removeNonAscii(line[1].value))]=str(removeNonAscii(line[6].value))           
+                
     return last
 
 def SendEmail(sheets,urls,ids,last,submitted, days,email):  
@@ -77,7 +75,7 @@ def SendEmail(sheets,urls,ids,last,submitted, days,email):
         wer.write(msg)
             
     fromAdd = 'bihshtein@hotmail.com'
-    toAdd = ['bihshtein@hotmail.com']
+    toAdd = [email,'bihshtein@hotmail.com']
     emsg = MIMEMultipart('alternative')
     emsg['Subject'] = "Sheet Report"
     part2 = MIMEText(msg, 'html')
@@ -93,7 +91,7 @@ def CreateReport(days,email):
     urls = []
     last = {}
     submitted = 0   
-    wb = load_workbook('C:\SheetsHelper\calendar.xlsx')
+    wb = load_workbook('C:\SheetsHelper\calendar.xlsx',read_only=True)
     allSheets = wb.get_sheet_names()
     unusedSheets = ['Copy Editors & Writers']
     for sheet in unusedSheets:

@@ -36,9 +36,9 @@ def DownloadFile(file):
     drive_service = GetService()  
     request = drive_service.files().export_media(fileId=file, mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response = request.execute()
-    with open('calendar.xlsx', "wb") as wer:
+    with open('C:\SheetsHelper\calendar.xlsx', "wb") as wer:
         wer.write(response)  
-		
+
 
 
 days = 2
@@ -50,8 +50,10 @@ editors['siukei@theculturetrip.com'] = '1AqMxekEh_JerFfeEkY_omaJqsGHgjA5246QsZlf
 editors['lily.niu@culturetrip.com'] = '1STKWMSN2yi_Bk-LdS6MimFYMwXQ_z8fRwjPG-zxQFeE'
 editors['tahiera@theculturetrip.com'] = '1_ZEl2HqnKprC-hOIUD6ti79MbBkrdfHxxvNLhWzbBF8'
 editors['grace@culturetrip.com'] = '10RNpzBXpFUcjIABr5eIUO8yxSoP7fBoJ-6oggBeeWug'
-#editors['mariam@theculturetrip.com'] = '1COEqPSZ78R7gOvJbWk1jhMyKz7pI5hmn8cyvRZW4dgs'
-#editors['charlotte.peet@theculturetrip.com'] = '1pFC7mIMhFvN6_6MTWY9tbx-XV6s9Zy8gjpYwlFKXx4c'
+editors['mariam@theculturetrip.com'] = '1COEqPSZ78R7gOvJbWk1jhMyKz7pI5hmn8cyvRZW4dgs'
+editors['charlotte.peet@theculturetrip.com'] = '1pFC7mIMhFvN6_6MTWY9tbx-XV6s9Zy8gjpYwlFKXx4c'
+
+
 import report
 for editor in editors.iteritems():
     DownloadFile(editor[1])
