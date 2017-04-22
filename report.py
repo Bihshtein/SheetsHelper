@@ -53,7 +53,7 @@ def GetLastWeek(sheet,days):
                 
     return last
 
-def SendEmail(sheets,urls,ids,last,submitted, days,email):  
+def SendEmail(sheets,urls,ids,last,submitted, days,email,name):  
     msg = '<p><b>Active sheets : </b></p>' 
     for s in sheets:
         if (sheets.index(s) % 10 == 0):
@@ -77,7 +77,7 @@ def SendEmail(sheets,urls,ids,last,submitted, days,email):
     fromAdd = 'bihshtein@hotmail.com'
     toAdd = [email,'bihshtein@hotmail.com']
     emsg = MIMEMultipart('alternative')
-    emsg['Subject'] = "Sheet Report"
+    emsg['Subject'] = "Daily report for " + name 
     part2 = MIMEText(msg, 'html')
     emsg.attach(part2         )
     s = smtplib.SMTP('smtp.live.com:587')#
@@ -86,7 +86,7 @@ def SendEmail(sheets,urls,ids,last,submitted, days,email):
     s.sendmail(fromAdd, toAdd, emsg.as_string())
     s.quit()
                 
-def CreateReport(days,email):
+def CreateReport(days,email,name):
     ids = []
     urls = []
     last = {}
@@ -102,4 +102,4 @@ def CreateReport(days,email):
         for item in GetLastWeek(wb[sheet],days).iteritems():
             last[item[0]] =item[1] 
         submitted += GetAllSubmitted(wb[sheet])
-    SendEmail(allSheets,urls,ids, last, submitted,days,email)
+    SendEmail(allSheets,urls,ids, last, submitted,days,email,name)
