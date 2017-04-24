@@ -46,11 +46,11 @@ if (len(sys.argv) > 1):
     days = int(sys.argv[1])
 
 editors = {}
-editors['siukei@theculturetrip.com'] = ['1AqMxekEh_JerFfeEkY_omaJqsGHgjA5246QsZlfNJBY','Siukei']
-editors['lily.niu@culturetrip.com'] = ['1STKWMSN2yi_Bk-LdS6MimFYMwXQ_z8fRwjPG-zxQFeE','Lily']
-editors['tahiera@theculturetrip.com'] = ['1_ZEl2HqnKprC-hOIUD6ti79MbBkrdfHxxvNLhWzbBF8','Tahiera']
-editors['grace@culturetrip.com'] = ['10RNpzBXpFUcjIABr5eIUO8yxSoP7fBoJ-6oggBeeWug','Grace']
-editors['mariam@theculturetrip.com'] = ['1COEqPSZ78R7gOvJbWk1jhMyKz7pI5hmn8cyvRZW4dgs', 'Mariam']
+#editors['siukei@theculturetrip.com'] = ['1AqMxekEh_JerFfeEkY_omaJqsGHgjA5246QsZlfNJBY','Siukei']
+#editors['lily.niu@culturetrip.com'] = ['1STKWMSN2yi_Bk-LdS6MimFYMwXQ_z8fRwjPG-zxQFeE','Lily']
+#editors['tahiera@theculturetrip.com'] = ['1_ZEl2HqnKprC-hOIUD6ti79MbBkrdfHxxvNLhWzbBF8','Tahiera']
+#editors['grace@culturetrip.com'] = ['10RNpzBXpFUcjIABr5eIUO8yxSoP7fBoJ-6oggBeeWug','Grace']
+#editors['mariam@theculturetrip.com'] = ['1COEqPSZ78R7gOvJbWk1jhMyKz7pI5hmn8cyvRZW4dgs', 'Mariam']
 editors['charlotte.peet@theculturetrip.com'] = ['1pFC7mIMhFvN6_6MTWY9tbx-XV6s9Zy8gjpYwlFKXx4c','Charlotte']
 
 

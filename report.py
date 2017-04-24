@@ -13,29 +13,29 @@ from email.mime.multipart import MIMEMultipart
 def removeNonAscii(s): return "".join(i for i in s if ord(i)<128)
 def GetMissingIDS(sheet):
     ids = []
-    for line in sheet.rows:
-        if (line[0].value == 'Submitted' and line[5].value == None  and line[1].value != None):
+    for line in sheet.rows:         
+        if (len(line) > 5 and line[0].value == 'Submitted' and line[5].value == None  and line[1].value != None):
             ids.append(str(removeNonAscii(line[1].value)))           
     return ids
                         
 def GetMissingUrls(sheet):
     urls = []
     for line in sheet.rows:
-        if (line[0].value == 'Published' and line[6].value == None):
+        if (len(line) > 6 and line[0].value == 'Published' and line[6].value == None):
             urls.append(str(line[1].value))
     return urls
 
 def GetAllSubmitted(sheet):
     count = 0
     for line in sheet.rows:
-        if (line[0].value == 'Submitted'):
+        if (len(line) > 1 and line[0].value == 'Submitted'):
             count += 1
     return count
 
 def GetLastWeek(sheet,days):
     last = {}
     for line in sheet.rows:
-        if (line[0].value == 'Published' and line[8].value != None):
+        if (len(line) > 8 and line[0].value == 'Published' and line[8].value != None):
             now = datetime.datetime.now()
           
             try:
@@ -75,7 +75,7 @@ def SendEmail(sheets,urls,ids,last,submitted, days,email,name):
         wer.write(msg)
             
     fromAdd = 'bihshtein@hotmail.com'
-    toAdd = [email,'bihshtein@hotmail.com']
+    toAdd = [email,'Anthony.johnston@theculturetrip.com','bihshtein@hotmail.com']
     emsg = MIMEMultipart('alternative')
     emsg['Subject'] = "Daily report for " + name 
     part2 = MIMEText(msg, 'html')
