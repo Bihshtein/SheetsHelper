@@ -10,13 +10,11 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 
-def removeNonAscii(s): return "".join(i for i in s if ord(i)<128)
-
 def GetMissingUrls(sheet):
     urls = []
     for line in sheet.rows:
         if (len(line) > 6 and line[0].value == 'Published' and line[6].value == None):
-            urls.append(str(removeNonAscii(line[1].value)))
+            urls.append(str(line[1].value))
     return urls
 
 def GetAllSubmitted(sheet):
@@ -38,12 +36,12 @@ def GetLastWeek(sheet,days):
                 try:
                       published = datetime.datetime.strptime(str(line[8].value),'%Y-%m-%d %H:%M:%S' )
                 except:
-                    print line[8].value
+                    print(line[8].value)
                     
                                 
             diff  =  now - published
             if (diff.days <= days and line[1].value != None and line[6].value != None): 
-                last[str(removeNonAscii(line[1].value))]=str(removeNonAscii(line[6].value))           
+                last[str(line[1].value)]=str(line[6].value)           
                 
     return last
 
@@ -55,7 +53,7 @@ def SendEmail(sheets,urls,last,submitted, days,email,name,toAll=True):
         msg += str(s) + ', '        
     msg += '<p><b>' + str(submitted) + ' Submitted articles are pending to be published. </b></p>'
     msg += '<p><b>{1} Published articles in the last {0} days : </b></p>'.format(days,len(last))   
-    for h in last.iteritems():
+    for h in last.items():
         msg += '<div><a href="'+ h[1]+'">'+ h[0] + '</a></div>'                
     msg +=  '<p><b>'+ str(len(urls))+' Published articles with missing Article URL : </b></p>'
     for h in urls:
@@ -63,7 +61,7 @@ def SendEmail(sheets,urls,last,submitted, days,email,name,toAll=True):
     msg = "<html><head></head><body>" + msg + "</html></body>"
     
     with open('C:\SheetsHelper\msg.html', "wb") as wer:
-        wer.write(msg)
+        wer.write(msg.encode('utf-8'))
             
     fromAdd = 'bihshtein@hotmail.com'
     toAdd = ['bihshtein@hotmail.com']
@@ -91,7 +89,7 @@ def CreateReport(days,email,name):
         allSheets.remove(sheet)
     for sheet in allSheets:        
         urls += GetMissingUrls(wb[sheet])
-        for item in GetLastWeek(wb[sheet],days).iteritems():
+        for item in GetLastWeek(wb[sheet],days).items():
             last[item[0]] =item[1] 
         submitted += GetAllSubmitted(wb[sheet])
-    SendEmail(allSheets,urls,last, submitted,days,email,name)
+    SendEmail(allSheets,urls,last, submitted,days,email,name,False)

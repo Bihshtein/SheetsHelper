@@ -55,7 +55,7 @@ editors['charlotte.peet@theculturetrip.com'] = ['1pFC7mIMhFvN6_6MTWY9tbx-XV6s9Zy
 
 
 import report
-for editor in editors.iteritems():
+for editor in editors.items():
     DownloadFile(editor[1][0])
     report.CreateReport(days, editor[0],editor[1][1])
 
