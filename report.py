@@ -25,7 +25,7 @@ def GetAllSubmitted(sheet):
             count += 1
     return count
 
-def GetLastWeek(sheet,days):
+def GetLastWeek(sheet,sheetName,days):
     last = {}
     for line in sheet.rows:
         if (len(line) > 8 and line[0].value == 'Published' and line[8].value != None):
@@ -42,48 +42,56 @@ def GetLastWeek(sheet,days):
                       if (diff.days <= days and line[1].value != None and line[6].value != None):
                           last[str(line[1].value)]=str(line[6].value)
                 except:
-                    print(line[8].value)
+                    print(sheetName + ', ' +line[8].value)
     return last
 	
-def GetArchived(sheet,days):
-    last = {}
+def GetArchived(sheet,sheetName, days):
+    last = []
+    for month in range(0,11):
+        last.insert(month,0)
     for line in sheet.rows:
-        if (len(line) > 8 and line[0].value == 'Archived' and line[8].value != None):
-            now = datetime.datetime.now()
-            try:
-                published =  utils.datetime.from_excel(line[8].value)
-                diff  =  now - published
-                if (diff.days <= days and line[1].value != None and line[6].value != None):
-                    if (calendar.month_name[published.month] in last):
-                        last[calendar.month_name[published.month]]= last[calendar.month_name[published.month]] + 1
-                    else:
-                        last[calendar.month_name[published.month]]= 1
+        if (len(line) > 8 and (line[0].value == 'Archived' or line[0].value == 'Published') and line[8].value != None):  
+            try:       
+                published =  utils.datetime.from_excel(line[8].value)			
             except:
                 try:
                     published = datetime.datetime.strptime(str(line[8].value),'%Y-%m-%d %H:%M:%S' )
-                    diff  =  now - published
-                    if (diff.days <= days and line[1].value != None and line[6].value != None):
-                        if (calendar.month_name[published.month] in last):
-                            last[calendar.month_name[published.month]]=  last[calendar.month_name[published.month]] + 1
-                        else:
-                            last[calendar.month_name[published.month]]= 1
-                except:
-                    print(line[8].value)
+                except Exception as ex:
+                    print(str(ex) + ' sheet name ' + sheetName)
+            if (published.year == 2017):                
+                last[published.month-1] =  last[published.month-1] + 1
+               
+            
     return last
 
-def SendEmail(sheets,urls,last,archived,submitted, days,email,name,reportName,toAll=True):
-    msg = '<p><b>Active sheets : </b></p>'
-    for s in sheets:
-        if (sheets.index(s) % 10 == 0):
-            msg += '<div></div>'
-        msg += str(s) + ', '
+def SendEmail(sheets,urls,last,archived,submitted, days,email,name,reportName,onlyTable=False,toAll=True): 
+    msg = ''
+    if (onlyTable):
+        msg += '<p><b>Archived and Published articles summary for 2017 </b></p>'
+        msg += '<table style="width:100%">'
+        msg += '<tr>'
+        msg += '<th>Region/Month</th>'    
+        for month in range(1,12):
+            msg += '<th>'+ calendar.month_name[month]+'</th>'
+        msg += '</tr>'
+        for h in archived.items():
+            msg += '<tr>'
+            msg += '<th>'+ h[0]+'</th>'
+            for month in h[1]:
+                if (month == 0):
+                    msg += '<th style="background-color:powderblue;">'+ str(month)+'</th>'
+                elif (month < 7):
+                    msg += '<th style="background-color:rgb(255, 128, 128);">'+ str(month)+'</th>'
+                elif (month < 15):
+                    msg += '<th style="background-color:yellow;">'+ str(month)+'</th>'
+                else:
+                    msg += '<th style="background-color:LimeGreen;">'+ str(month)+'</th>'
+            msg += '</tr>'
+        msg += '</table>'
     msg += '<p><b>' + str(submitted) + ' Submitted articles are pending to be published. </b></p>'
     msg += '<p><b>{1} Published articles in the last {0} days : </b></p>'.format(days,len(last))
     for h in last.items():
         msg += '<div><a href="'+ h[1]+'">'+ h[0] + '</a></div>'
-    msg += '<p><b>{1} Archived articles in the last {0} days : </b></p>'.format(days,len(archived))
-    for h in archived.items():
-        msg += '<div>'+ h[0]+' - '+ h[1][0] + ' - ' + str(h[1][1]) + '</div>'
     msg +=  '<p><b>'+ str(len(urls))+' Published articles with missing Article URL : </b></p>'
     for h in urls:
         msg += '<div>\t' + h + '</div>'
@@ -96,7 +104,7 @@ def SendEmail(sheets,urls,last,archived,submitted, days,email,name,reportName,to
     toAdd = ['bihshtein@hotmail.com']
     if (toAll):
         toAdd.append(email)
-        toAdd.append('Anthony.johnston@theculturetrip.com')
+        #toAdd.append('Anthony.johnston@theculturetrip.com')
     emsg = MIMEMultipart('alternative')
     emsg['Subject'] = reportName + " for " + name
     part2 = MIMEText(msg, 'html')
@@ -119,9 +127,10 @@ def CreateReport(days,reportName,email,name):
         allSheets.remove(sheet)
     for sheet in allSheets:
         urls += GetMissingUrls(wb[sheet])
-        for item in GetLastWeek(wb[sheet],days).items():
+        for item in GetLastWeek(wb[sheet],sheet,days).items():
             last[item[0]] =item[1]
-        for item in GetArchived(wb[sheet],days).items():
-            archived[sheet] =item
+        archived[sheet] = []
+        for item in GetArchived(wb[sheet],sheet,days):            
+            archived[sheet].append(item)
         submitted += GetAllSubmitted(wb[sheet])
-    SendEmail(allSheets,urls,last, archived, submitted,days,email,name, reportName,False)
+    SendEmail(allSheets,urls,last, archived, submitted,days,email,name, reportName,True,True)
