@@ -41,12 +41,14 @@ def DownloadFile(file):
     with open('C:\SheetsHelper\calendar.xlsx', "wb") as wer:
         wer.write(response)  
 
-def DownloadAllAndResport(days):
+def DownloadAllAndResport(days, anual):
     reportName = "Daily report"
     if (days==7):
         if (calendar.day_name[datetime.datetime.today().weekday()] != 'Wednesday'):
     	    return 
         reportName = "Weekly report"
+    if (anual):
+        reportName = "Monthly report"
     editors = {}
     editors['siukeicheung184@gmail.com'] = ['1AqMxekEh_JerFfeEkY_omaJqsGHgjA5246QsZlfNJBY','Siukei']
     #editors['lily.niu@culturetrip.com'] = ['1STKWMSN2yi_Bk-LdS6MimFYMwXQ_z8fRwjPG-zxQFeE','Lily']
@@ -56,11 +58,12 @@ def DownloadAllAndResport(days):
     #editors['charlotte.peet@theculturetrip.com'] = ['1pFC7mIMhFvN6_6MTWY9tbx-XV6s9Zy8gjpYwlFKXx4c','Charlotte']
     for editor in editors.items():
         DownloadFile(editor[1][0])
-        report.CreateReport(days, reportName, editor[0],editor[1][1],True)
+        report.CreateReport(days, reportName, editor[0],editor[1][1],anual)
 	
-days = 2
-if (len(sys.argv) > 1):
-    days = int(sys.argv[1])
-DownloadAllAndResport(days)
+
+
+days = int(sys.argv[1])
+anual  = bool(sys.argv[2])
+DownloadAllAndResport(days, anual)
 
 

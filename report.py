@@ -84,7 +84,15 @@ def GetDailyReport(urls,last,submitted, days):
     	msg += '<div>\t' + h + '</div>'
     msg = "<html><head></head><body>" + msg + "</html></body>"
     return msg
-
+def GetColor(num):
+    if (num == 0):
+        return 'powderblue'
+    elif (num < 7):
+        return'rgb(255, 128, 128)'
+    elif (num < 15):
+        return'yellow'
+    else:
+        return'LimeGreen'
 def GetAnualReport(archived, year,name, stackTrace):
     msg = '<center><p style="font-size:40px"><b>{0} archived and published articles summary for 2017 </b></p></center>'.format(name)
     
@@ -109,19 +117,13 @@ def GetAnualReport(archived, year,name, stackTrace):
         count = 0
         for month in h[1]:
             monthTotals[count] += month
-            if (month == 0):
-                msg += '<th style="background-color:powderblue;">'+ str(month)+'</th>'
-            elif (month < 7):
-                msg += '<th style="background-color:rgb(255, 128, 128);">'+ str(month)+'</th>'
-            elif (month < 15):
-                msg += '<th style="background-color:yellow;">'+ str(month)+'</th>'
-            else:
-                msg += '<th style="background-color:LimeGreen;">'+ str(month)+'</th>'
+            msg += '<th style="background-color:{0};">'.format(GetColor(month))+ str(month)+'</th>'
             if (month > 0 and count < 13):
                 writerActiveMonths+=1
                 writerTotals+=month
             count += 1
-        msg += '<th style="background-color:LightGrey;">'+ str(round(writerTotals/writerActiveMonths,2))+'</th>'         
+        avg = round(writerTotals/writerActiveMonths,2)
+        msg +='<th style="background-color:{0};">'.format(GetColor(avg))+str(avg)+'</th>'         
         
     msg += '</tr>'
     msg += '<tr>'
@@ -179,4 +181,4 @@ def CreateReport(days,reportName,email,name,isAnualReport):
         msg = GetDailyReport(urls,last, submitted,days)
     else:
         msg = GetAnualReport(archived,2017,name, stackTrace)
-    SendEmail(msg,email,name, reportName,True)
+    SendEmail(msg,email,name, reportName,False)
