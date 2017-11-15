@@ -9,131 +9,172 @@ from openpyxl import utils
 from oauth2client import client
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from enum import Enum
 
 
-def GetMissingUrls(sheet):
-    urls = []
-    for line in sheet.rows:
-        if (len(line) > 6 and line[0].value == 'Published' and line[6].value == None):
-            urls.append(str(line[1].value))
-    return urls
+class ReportType(Enum):
+    Monthly = 1
+    Weekly = 2
+    Daily = 3   
 
-def GetAllSubmitted(sheet):
-    count = 0
-    for line in sheet.rows:
-        if (len(line) > 1 and line[0].value == 'Submitted'):
-            count += 1
-    return count
 
-def GetLastWeek(sheet,sheetName,days):
-    last = {}
-    for line in sheet.rows:
-        if (len(line) > 8 and line[0].value == 'Published' and line[8].value != None):
-            now = datetime.datetime.now()
-            try:
-                published =  utils.datetime.from_excel(line[8].value)
-                diff  =  now - published
-                if (diff.days <= days and line[1].value != None and line[6].value != None):
-                    last[str(line[1].value)]=str(line[6].value)
-            except:
-                try:
-                      published = datetime.datetime.strptime(str(line[8].value),'%Y-%m-%d %H:%M:%S' )
-                      diff  =  now - published
-                      if (diff.days <= days and line[1].value != None and line[6].value != None):
-                          last[str(line[1].value)]=str(line[6].value)
-                except:
-                    print(sheetName + ', ' + str(line[8].value))
-    return last
-	
-def GetArchived(sheet,sheetName, days):
+invalidDateShift = 1
+noDateShift = 2
+averageShift = 4
+submittedShift = 3	
+
+
+    
+def GetIndex(date, reportType):    
+    if (reportType==ReportType.Monthly):
+        return date.month -1
+    elif (reportType==ReportType.Weekly):
+        firstDay = datetime.datetime(date.year,1,1).weekday()
+        daysToAdd = 0
+        if (firstDay < 2):
+            daysToAdd = 2-firstDay
+        elif (firstDay > 2):
+            daysToAdd = (6- firstDay+2+1)        
+        return int((date - datetime.datetime(date.year,1,1 + daysToAdd)).days/7)
+    else: 
+        return (date - datetime.datetime(date.year,1,1)).days
+    
+def GetArchived(sheet,sheetName, year, reportType, max):    
     last = []   
+    firstDay = datetime.datetime.now() - datetime.timedelta(days=1)
     stackTrace = ''
-    for month in range(0,14):
-        last.append(0)
+    publishedMsg = ''
+    currIndex = GetIndex(firstDay,reportType)
+    totalColumns =  max + averageShift    
+    for month in range(0,totalColumns-1):
+        liist = []       
+        last.append(liist)    
     for line in sheet.rows:
         published = None
-        if (len(line) > 0 and (line[0].value == 'Archived' or line[0].value == 'Published')):  
-            if (len(line) < 9 or line[8].value == None):
-                last[13] =  last[13] + 1
+        if (len(line) > 0 and  line[0].value == 'Submitted'):            
+            last[max+submittedShift-1].append(str(line[1].value))          
+        if (len(line) > 1 and (line[0].value == 'Archived' or line[0].value == 'Published')):                          
+            if (len(line) < 9 or line[8].value == None):                           			
+                last[max + noDateShift-1].append(str(line[1].value))                
             else:
                 try:       
                     published =  utils.datetime.from_excel(line[8].value)			
                 except:
                     try:
-                        published = datetime.datetime.strptime(str(line[8].value),'%Y-%m-%d %H:%M:%S' )
-                          
+                        published = datetime.datetime.strptime(str(line[8].value),'%Y-%m-%d %H:%M:%S' )                                                  
                     except Exception as ex:
                         msg = str(ex) + ' TAB Name ' + sheetName
                         print(msg)
                         stackTrace += '<div>'+msg + '</div>'
-                        last[12] =  last[12] + 1
-                if (published!= None  and published.year == 2017):                          
-                    last[published.month-1] =  last[published.month-1] + 1 
-                         
-    t = last, stackTrace     
+                        last[max+invalidDateShift-1].append(str(line[1].value))                        
+                if (published != None  and published.year == year and ((currIndex - GetIndex(published,reportType))  < max)):                                                                
+                   
+                    index = currIndex-GetIndex(published,reportType)
+                    last[index].append('aleg')                    
+                    if (index == 0):
+                        if (publishedMsg == ''):
+                            publishedMsg = '<div>'+sheetName+'</div>'
+                        publishedMsg += '<a href="'+ str(line[6].value)+'">'+ str(line[1].value) + ' | </a>'                                                 
+    t = last, stackTrace , publishedMsg   
     return  t 	
     
 
-def GetDailyReport(urls,last,submitted, days):
-    msg = '<p><b>' + str(submitted) + ' Submitted articles are pending to be published. </b></p>'
-    msg += '<p><b>{1} Published articles in the last {0} days : </b></p>'.format(days,len(last))
-    for h in last.items():
-    	msg += '<div><a href="'+ h[1]+'">'+ h[0] + '</a></div>'
-    msg +=  '<p><b>'+ str(len(urls))+' Published articles with missing Article URL : </b></p>'
-    for h in urls:
-    	msg += '<div>\t' + h + '</div>'
-    msg = "<html><head></head><body>" + msg + "</html></body>"
-    return msg
-def GetColor(num):
-    if (num == 0):
-        return 'powderblue'
-    elif (num < 7):
-        return'rgb(255, 128, 128)'
-    elif (num < 15):
-        return'yellow'
+def GetColor(num,reportType):
+    if (reportType==ReportType.Monthly):
+        if (num == 0):
+            return 'LightGrey'
+        elif (num < 7):
+            return'rgb(255, 128, 128)'
+        elif (num < 15):
+            return'yellow'
+        else:
+            return'LimeGreen'
+    elif (reportType==ReportType.Weekly):
+        if (num == 0):
+            return 'LightGrey'
+        elif (num < 2):
+            return'rgb(255, 128, 128)'
+        elif (num < 4):
+            return'yellow'
+        else:
+            return'LimeGreen'
     else:
-        return'LimeGreen'
-def GetAnualReport(archived, year,name, stackTrace):
-    msg = '<center><p style="font-size:40px"><b>{0} archived and published articles summary for 2017 </b></p></center>'.format(name)
-    
+        if (num == 0):
+            return 'LightGrey'
+        elif (num  <0.25):        		
+            return 'rgb(255, 128, 128)'
+        elif (num  < 0.5):
+            return'yellow'
+        else:
+            return'LimeGreen'
+def GetAnualReport(allSheets, archived, year,name, stackTrace, publishedMsg, reportType, max):
+    firstDay = datetime.datetime.now() - datetime.timedelta(days=1)
+    currMonth = GetIndex(firstDay, reportType)
+    msg = '<center><p style="font-size:40px"><b>{0} {1} published articles summary</b></p></center>'.format(name,reportType)    
     msg += '<table style="width:100%">'
     msg += '<tr>'
-    msg += '<th>Region/Month</th>'    
-    for month in range(1,13):
-        msg += '<th>'+ calendar.month_name[month]+'</th>'
-    msg += '<th>No Date</th>'
+    timeframe = 'Weekday'
+    if (reportType==ReportType.Weekly):
+        timeframe = 'Week number'
+    if (reportType==ReportType.Monthly):
+        timeframe = 'Month'
+    msg += '<th>Region/{0}</th>'.format(timeframe)    
+    published = ''
+    for colNum in range(0,max):
+        if (reportType==ReportType.Monthly):
+            msg += '<th>'+ calendar.month_name[firstDay.month-colNum]+'</th>'
+        elif (reportType==ReportType.Daily):
+            msg += '<th>'+ calendar.day_name[(firstDay - datetime.timedelta(days=colNum)).weekday()]+'</th>'
+        else:
+            msg += '<th>'+ str(colNum)+'</th>'
     msg += '<th>Invalid Date</th>'
-    msg += '<th>Average</th>'
+    msg += '<th>No Date</th>'    
+    msg += '<th>Submitted</th>'
+    msg += '<th>Average</th>'    
     msg += '</tr>'
     monthTotals = []
-    writerTotals = 0
-    writerActiveMonths = 0
-    for month in range(0,14):
+   
+    for month in range(0,max+averageShift):
         monthTotals.append(0)   
     
-    for h in archived.items():         
+    for sheet in allSheets:       
         msg += '<tr>'
-        msg += '<th>'+ h[0]+'</th>'        
+        msg += '<th>'+ sheet+'</th>'        
         count = 0
-        for month in h[1]:
-            monthTotals[count] += month
-            msg += '<th style="background-color:{0};">'.format(GetColor(month))+ str(month)+'</th>'
-            if (month > 0 and count < 13):
+        writerTotals = 0
+        writerActiveMonths = 0
+        for listPub in archived[sheet]:            
+            sum = len(listPub)
+            monthTotals[count] += sum
+            if (count < max):
+                msg += '<th style="background-color:{0};">'.format(GetColor(sum,reportType))+ str(sum)+'</th>'
+            else:
+                if (sum ==0):
+                    msg += '<th style="background-color:{0};">'.format('LightGrey')+ str(sum)+'</th>'
+                elif (sum <5):
+                    msg += '<th style="background-color:{0};">'.format('yellow')+ str(sum)+'</th>'
+                else:
+                    msg += '<th style="background-color:{0};">'.format('rgb(255, 128, 128)')+ str(sum)+'</th>'
+            if ((sum > 0 or reportType == ReportType.Daily) and  count < max):
                 writerActiveMonths+=1
-                writerTotals+=month
+                writerTotals+=sum
             count += 1
-        avg = round(writerTotals/writerActiveMonths,2)
-        msg +='<th style="background-color:{0};">'.format(GetColor(avg))+str(avg)+'</th>'         
+        avg = 0
+        if (writerActiveMonths > 0):
+            avg = round(writerTotals/writerActiveMonths,2)
+        msg +='<th style="background-color:{0};">'.format(GetColor(avg,reportType))+str(avg)+'</th>'         
         
     msg += '</tr>'
     msg += '<tr>'
     msg += '<th>Total</th>'   
     for month in monthTotals:        
-        msg += '<th style="background-color:LightGrey;">'+ str(month)+'</th>'
+        msg += '<th style="background-color:powderblue;">'+ str(month)+'</th>'
     msg += '</tr>'
-    msg += '</table>'
-    msg += '<p style="font-size:20px"><b> Invalid Dates Info</b></p>'
+    msg += '</table>'    
+    msg += '<p style="font-size:20px"><b> Invalid Dates Info</b></p>'    
     msg += stackTrace
+    msg += '<p style="font-size:20px"><b> Published links</b></p>'    
+    msg += publishedMsg
     return msg
 def SendEmail(msg,email,name,reportName,toAll): 
     with open('C:\SheetsHelper\msg.html', "wb") as wer:
@@ -143,7 +184,7 @@ def SendEmail(msg,email,name,reportName,toAll):
     toAdd = ['bihshtein@hotmail.com']
     if (toAll):
         toAdd.append(email)
-        #toAdd.append('Anthony.johnston@theculturetrip.com')
+        toAdd.append('Anthony.johnston@theculturetrip.com')
     emsg = MIMEMultipart('alternative')
     emsg['Subject'] = reportName + " for " + name
     part2 = MIMEText(msg, 'html')
@@ -154,31 +195,26 @@ def SendEmail(msg,email,name,reportName,toAll):
     s.sendmail(fromAdd, toAdd, emsg.as_string())
     s.quit()
 
-def CreateReport(days,reportName,email,name,isAnualReport):
-    stackTrace = ''
+def CreateReport(reportName,email,name,reportType, max):
+    stackTrace = ''   
+    publishedMsg = ''   
     urls = []
     last = {}
     archived = {}
     submitted = 0
     wb = load_workbook('C:\SheetsHelper\calendar.xlsx',read_only=True)
     allSheets = wb.get_sheet_names()
+    print(allSheets)
     unusedSheets = ['Copy Editors & Writers']
     for sheet in unusedSheets:
         allSheets.remove(sheet)
-    for sheet in allSheets:
-        if (not isAnualReport):
-            urls += GetMissingUrls(wb[sheet])
-            for item in GetLastWeek(wb[sheet],sheet,days).items():
-                last[item[0]] =item[1]
-            submitted += GetAllSubmitted(wb[sheet])
-        else:
+    for sheet in allSheets:       
             archived[sheet] = []
-            res = GetArchived(wb[sheet],sheet,days)
+            res = GetArchived(wb[sheet],sheet, 2017, reportType, max)
             stackTrace += res[1]
+            publishedMsg += res[2]
             for item in res[0]:            
-                archived[sheet].append(item)                
-    if (not isAnualReport):
-        msg = GetDailyReport(urls,last, submitted,days)
-    else:
-        msg = GetAnualReport(archived,2017,name, stackTrace)
-    SendEmail(msg,email,name, reportName,False)
+                archived[sheet].append(item)                    
+    
+    msg = GetAnualReport(allSheets, archived,2017,name, stackTrace, publishedMsg, reportType, max)
+    SendEmail(msg,email,name, reportName,True)

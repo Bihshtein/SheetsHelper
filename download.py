@@ -41,29 +41,30 @@ def DownloadFile(file):
     with open('C:\SheetsHelper\calendar.xlsx', "wb") as wer:
         wer.write(response)  
 
-def DownloadAllAndResport(days, anual):
-    reportName = "Daily report"
-    if (days==7):
-        if (calendar.day_name[datetime.datetime.today().weekday()] != 'Wednesday'):
+def DownloadAllAndResport(max, reportType):    
+    if (report.ReportType[reportType] == report.ReportType.Weekly):
+        if (datetime.datetime.today().weekday() != 2):
     	    return 
-        reportName = "Weekly report"
-    if (anual):
-        reportName = "Monthly report"
+    if (report.ReportType[reportType] == report.ReportType.Monthly):
+        if (datetime.datetime.today().day != 1):
+    	    return 
+    reportName = str(reportType)
     editors = {}
-    editors['siukeicheung184@gmail.com'] = ['1AqMxekEh_JerFfeEkY_omaJqsGHgjA5246QsZlfNJBY','Siukei']
-    #editors['lily.niu@culturetrip.com'] = ['1STKWMSN2yi_Bk-LdS6MimFYMwXQ_z8fRwjPG-zxQFeE','Lily']
+    editors['siukei@theculturetrip.com;lily.niu@culturetrip.com'] = ['1AqMxekEh_JerFfeEkY_omaJqsGHgjA5246QsZlfNJBY','Siukei']
+    #editors['andrew.headspeath@culturetrip.com'] = ['1QMOp5ygwIGwlgZu7h80GdnFAO1jd8jWvkFnaTITP5sk','Andy']    
+    #editors['grace@culturetrip.com'] = ['1STKWMSN2yi_Bk-LdS6MimFYMwXQ_z8fRwjPG-zxQFeE','Grace']
     #editors['tahiera@theculturetrip.com'] = ['1_ZEl2HqnKprC-hOIUD6ti79MbBkrdfHxxvNLhWzbBF8','Tahiera']
-    #editors['grace@culturetrip.com'] = ['10RNpzBXpFUcjIABr5eIUO8yxSoP7fBoJ-6oggBeeWug','Grace']
+    #editors['lily.niu@culturetrip.com'] = ['10RNpzBXpFUcjIABr5eIUO8yxSoP7fBoJ-6oggBeeWug','Lily']
     #editors['mariam@theculturetrip.com'] = ['1COEqPSZ78R7gOvJbWk1jhMyKz7pI5hmn8cyvRZW4dgs', 'Mariam']
     #editors['charlotte.peet@theculturetrip.com'] = ['1pFC7mIMhFvN6_6MTWY9tbx-XV6s9Zy8gjpYwlFKXx4c','Charlotte']
     for editor in editors.items():
         DownloadFile(editor[1][0])
-        report.CreateReport(days, reportName, editor[0],editor[1][1],anual)
+        report.CreateReport(reportName, editor[0],editor[1][1],report.ReportType[reportType], max)
 	
 
 
-days = int(sys.argv[1])
-anual  = bool(sys.argv[2])
-DownloadAllAndResport(days, anual)
+max = int(sys.argv[1])
+reportType  = str(sys.argv[2])
+DownloadAllAndResport(max, reportType)
 
 
