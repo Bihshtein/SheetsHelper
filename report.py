@@ -15,17 +15,17 @@ from enum import Enum
 class ReportType(Enum):
     Monthly = 1
     Weekly = 2
-    Daily = 3   
+    Daily = 3
 
 
 invalidDateShift = 1
 noDateShift = 2
 averageShift = 4
-submittedShift = 3	
+submittedShift = 3
 
 
-    
-def GetIndex(date, reportType):    
+
+def GetIndex(date, reportType):
     if (reportType==ReportType.Monthly):
         return date.month -1
     elif (reportType==ReportType.Weekly):
@@ -34,50 +34,53 @@ def GetIndex(date, reportType):
         if (firstDay < 2):
             daysToAdd = 2-firstDay
         elif (firstDay > 2):
-            daysToAdd = (6- firstDay+2+1)        
+            daysToAdd = (6- firstDay+2+1)
         return int((date - datetime.datetime(date.year,1,1 + daysToAdd)).days/7)
-    else: 
+    else:
         return (date - datetime.datetime(date.year,1,1)).days
-    
-def GetArchived(sheet,sheetName, year, reportType, max):    
-    last = []   
+
+def GetArchived(sheet,sheetName, year, reportType, max):
+    last = []
     firstDay = datetime.datetime.now() - datetime.timedelta(days=1)
     stackTrace = ''
     publishedMsg = ''
     currIndex = GetIndex(firstDay,reportType)
-    totalColumns =  max + averageShift    
+    totalColumns =  max + averageShift
     for month in range(0,totalColumns-1):
-        liist = []       
-        last.append(liist)    
+        liist = []
+        last.append(liist)
     for line in sheet.rows:
         published = None
-        if (len(line) > 0 and  line[0].value == 'Submitted'):            
-            last[max+submittedShift-1].append(str(line[1].value))          
-        if (len(line) > 1 and (line[0].value == 'Archived' or line[0].value == 'Published')):                          
-            if (len(line) < 9 or line[8].value == None):                           			
-                last[max + noDateShift-1].append(str(line[1].value))                
+        if (len(line) > 0 and  line[0].value == 'Submitted'):
+            last[max+submittedShift-1].append(str(line[1].value))
+        if (len(line) > 1 and (line[0].value == 'Archived' or line[0].value == 'Published')):
+            if (len(line) < 9 or line[8].value == None):
+                last[max + noDateShift-1].append(str(line[1].value))
             else:
-                try:       
-                    published =  utils.datetime.from_excel(line[8].value)			
+                try:
+                    published =  utils.datetime.from_excel(line[8].value)
                 except:
                     try:
-                        published = datetime.datetime.strptime(str(line[8].value),'%Y-%m-%d %H:%M:%S' )                                                  
+                        published = datetime.datetime.strptime(str(line[8].value),'%Y-%m-%d %H:%M:%S' )
                     except Exception as ex:
                         msg = str(ex) + ' TAB Name ' + sheetName
                         print(msg)
                         stackTrace += '<div>'+msg + '</div>'
-                        last[max+invalidDateShift-1].append(str(line[1].value))                        
-                if (published != None  and published.year == year and ((currIndex - GetIndex(published,reportType))  < max)):                                                                
-                   
+                        last[max+invalidDateShift-1].append(str(line[1].value))
+                if (published != None  and published.year == year and ((currIndex - GetIndex(published,reportType))  < max)):
+
                     index = currIndex-GetIndex(published,reportType)
-                    last[index].append('aleg')                    
+                    try:
+                        last[index].append('aleg')
+                    except:
+                        'Bad Index' + str(index)
                     if (index == 0):
                         if (publishedMsg == ''):
                             publishedMsg = '<div>'+sheetName+'</div>'
-                        publishedMsg += '<a href="'+ str(line[6].value)+'">'+ str(line[1].value) + ' | </a>'                                                 
-    t = last, stackTrace , publishedMsg   
-    return  t 	
-    
+                        publishedMsg += '<a href="'+ str(line[6].value)+'">'+ str(line[1].value) + ' | </a>'
+    t = last, stackTrace , publishedMsg
+    return  t
+
 
 def GetColor(num,reportType):
     if (reportType==ReportType.Monthly):
@@ -101,7 +104,7 @@ def GetColor(num,reportType):
     else:
         if (num == 0):
             return 'LightGrey'
-        elif (num  <0.25):        		
+        elif (num  <0.25):
             return 'rgb(255, 128, 128)'
         elif (num  < 0.5):
             return'yellow'
@@ -110,7 +113,7 @@ def GetColor(num,reportType):
 def GetAnualReport(allSheets, archived, year,name, stackTrace, publishedMsg, reportType, max):
     firstDay = datetime.datetime.now() - datetime.timedelta(days=1)
     currMonth = GetIndex(firstDay, reportType)
-    msg = '<center><p style="font-size:40px"><b>{0} {1} published articles summary</b></p></center>'.format(name,reportType)    
+    msg = '<center><p style="font-size:40px"><b>{0} {1} published articles summary</b></p></center>'.format(name,reportType)
     msg += '<table style="width:100%">'
     msg += '<tr>'
     timeframe = 'Weekday'
@@ -118,7 +121,7 @@ def GetAnualReport(allSheets, archived, year,name, stackTrace, publishedMsg, rep
         timeframe = 'Week number'
     if (reportType==ReportType.Monthly):
         timeframe = 'Month'
-    msg += '<th>Region/{0}</th>'.format(timeframe)    
+    msg += '<th>Region/{0}</th>'.format(timeframe)
     published = ''
     for colNum in range(0,max):
         if (reportType==ReportType.Monthly):
@@ -128,22 +131,22 @@ def GetAnualReport(allSheets, archived, year,name, stackTrace, publishedMsg, rep
         else:
             msg += '<th>'+ str(colNum)+'</th>'
     msg += '<th>Invalid Date</th>'
-    msg += '<th>No Date</th>'    
+    msg += '<th>No Date</th>'
     msg += '<th>Submitted</th>'
-    msg += '<th>Average</th>'    
+    msg += '<th>Average</th>'
     msg += '</tr>'
     monthTotals = []
-   
+
     for month in range(0,max+averageShift):
-        monthTotals.append(0)   
-    
-    for sheet in allSheets:       
+        monthTotals.append(0)
+
+    for sheet in allSheets:
         msg += '<tr>'
-        msg += '<th>'+ sheet+'</th>'        
+        msg += '<th>'+ sheet+'</th>'
         count = 0
         writerTotals = 0
         writerActiveMonths = 0
-        for listPub in archived[sheet]:            
+        for listPub in archived[sheet]:
             sum = len(listPub)
             monthTotals[count] += sum
             if (count < max):
@@ -162,21 +165,21 @@ def GetAnualReport(allSheets, archived, year,name, stackTrace, publishedMsg, rep
         avg = 0
         if (writerActiveMonths > 0):
             avg = round(writerTotals/writerActiveMonths,2)
-        msg +='<th style="background-color:{0};">'.format(GetColor(avg,reportType))+str(avg)+'</th>'         
-        
+        msg +='<th style="background-color:{0};">'.format(GetColor(avg,reportType))+str(avg)+'</th>'
+
     msg += '</tr>'
     msg += '<tr>'
-    msg += '<th>Total</th>'   
-    for month in monthTotals:        
+    msg += '<th>Total</th>'
+    for month in monthTotals:
         msg += '<th style="background-color:powderblue;">'+ str(month)+'</th>'
     msg += '</tr>'
-    msg += '</table>'    
-    msg += '<p style="font-size:20px"><b> Invalid Dates Info</b></p>'    
+    msg += '</table>'
+    msg += '<p style="font-size:20px"><b> Invalid Dates Info</b></p>'
     msg += stackTrace
-    msg += '<p style="font-size:20px"><b> Published links</b></p>'    
+    msg += '<p style="font-size:20px"><b> Published links</b></p>'
     msg += publishedMsg
     return msg
-def SendEmail(msg,email,name,reportName,toAll): 
+def SendEmail(msg,email,name,reportName,toAll):
     with open('C:\SheetsHelper\msg.html', "wb") as wer:
         wer.write(msg.encode('utf-8'))
 
@@ -184,6 +187,7 @@ def SendEmail(msg,email,name,reportName,toAll):
     toAdd = ['bihshtein@hotmail.com']
     if (toAll):
         toAdd.append(email)
+        toAdd.append('elena.fuetsch@culturetrip.com')
         toAdd.append('Anthony.johnston@theculturetrip.com')
     emsg = MIMEMultipart('alternative')
     emsg['Subject'] = reportName + " for " + name
@@ -196,8 +200,8 @@ def SendEmail(msg,email,name,reportName,toAll):
     s.quit()
 
 def CreateReport(reportName,email,name,reportType, max):
-    stackTrace = ''   
-    publishedMsg = ''   
+    stackTrace = ''
+    publishedMsg = ''
     urls = []
     last = {}
     archived = {}
@@ -208,13 +212,13 @@ def CreateReport(reportName,email,name,reportType, max):
     unusedSheets = ['Copy Editors & Writers']
     for sheet in unusedSheets:
         allSheets.remove(sheet)
-    for sheet in allSheets:       
+    for sheet in allSheets:
             archived[sheet] = []
-            res = GetArchived(wb[sheet],sheet, 2017, reportType, max)
+            res = GetArchived(wb[sheet],sheet, 2018, reportType, max)
             stackTrace += res[1]
             publishedMsg += res[2]
-            for item in res[0]:            
-                archived[sheet].append(item)                    
-    
+            for item in res[0]:
+                archived[sheet].append(item)
+
     msg = GetAnualReport(allSheets, archived,2017,name, stackTrace, publishedMsg, reportType, max)
     SendEmail(msg,email,name, reportName,True)
